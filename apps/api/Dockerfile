@@ -1,4 +1,4 @@
-FROM node:20-alpine AS builder
+FROM oven/bun:1-alpine AS builder
 
 WORKDIR /app
 
@@ -6,20 +6,20 @@ WORKDIR /app
 COPY package.json ./
 COPY prisma ./prisma/
 
-# Install dependencies
-RUN npm install
+# Install dependencies with bun (much faster)
+RUN bun install
 
 # Generate Prisma client
-RUN npx prisma generate
+RUN bunx prisma generate
 
 # Copy source code
 COPY . .
 
-# Build
-RUN npm run build
+# Build with bun
+RUN bun run build
 
 # Production stage
-FROM node:20-alpine AS runner
+FROM oven/bun:1-alpine AS runner
 
 WORKDIR /app
 
@@ -30,4 +30,4 @@ COPY --from=builder /app/package.json ./
 
 EXPOSE 3001
 
-CMD ["node", "dist/main.js"]
+CMD ["bun", "run", "dist/main.js"]

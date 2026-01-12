@@ -2,6 +2,7 @@
   "name": "tiermate",
   "version": "1.0.0",
   "private": true,
+  "packageManager": "pnpm@10.10.0",
   "description": "TierMate - 好物分享平台",
   "scripts": {
     "dev": "pnpm -r --parallel run dev",

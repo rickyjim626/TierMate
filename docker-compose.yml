@@ -1,0 +1,45 @@
+services:
+  api:
+    build:
+      context: ./apps/api
+      dockerfile: Dockerfile
+    container_name: tiermate-api
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+    environment:
+      - DATABASE_URL=postgresql://tiermate:tiermate123@postgres:5432/tiermate?schema=public
+      - JWT_SECRET=${JWT_SECRET:-your-super-secret-jwt-key-change-this-in-production}
+      - JWT_REFRESH_SECRET=${JWT_REFRESH_SECRET:-your-super-secret-refresh-key-change-this}
+      - PORT=3001
+      - CORS_ORIGIN=${CORS_ORIGIN:-*}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - tiermate-network
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: tiermate-postgres
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=tiermate
+      - POSTGRES_PASSWORD=tiermate123
+      - POSTGRES_DB=tiermate
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tiermate -d tiermate"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - tiermate-network
+
+volumes:
+  postgres_data:
+
+networks:
+  tiermate-network:
+    driver: bridge

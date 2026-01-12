@@ -2,31 +2,26 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-# Install pnpm
-RUN npm install -g pnpm
-
 # Copy package files
-COPY package.json pnpm-lock.yaml* ./
+COPY package.json ./
 COPY prisma ./prisma/
 
 # Install dependencies
-RUN pnpm install --frozen-lockfile || pnpm install
+RUN npm install
 
 # Generate Prisma client
-RUN pnpm prisma generate
+RUN npx prisma generate
 
 # Copy source code
 COPY . .
 
 # Build
-RUN pnpm build
+RUN npm run build
 
 # Production stage
 FROM node:20-alpine AS runner
 
 WORKDIR /app
-
-RUN npm install -g pnpm
 
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/dist ./dist

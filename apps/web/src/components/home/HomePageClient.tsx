@@ -1,12 +1,24 @@
 'use client';
 
+import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Header } from '@/components/layout/header';
 import { ProductGrid } from '@/components/product/product-grid';
 import { MobileLayout, MobileProductFeed } from '@/components/mobile';
+import { getCategories } from '@/lib/api/product';
+import { cn } from '@/lib/utils';
 
 export function HomePageClient() {
   const isMobile = useIsMobile();
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+
+  // 获取分类列表
+  const { data: categories = [] } = useQuery({
+    queryKey: ['categories'],
+    queryFn: getCategories,
+    staleTime: 5 * 60 * 1000, // 5分钟
+  });
 
   // 移动端布局
   if (isMobile) {
@@ -22,26 +34,46 @@ export function HomePageClient() {
 
         {/* 分类标签滚动 */}
         <div className="bg-white border-b border-gray-100 sticky top-0 z-10">
-          <div className="flex gap-3 px-4 py-3 overflow-x-auto scrollbar-hide">
-            {['推荐', '数码', '家居', '美妆', '服饰', '美食', '运动'].map(
-              (tag, index) => (
-                <button
-                  key={tag}
-                  className={`px-4 py-1.5 rounded-full text-sm whitespace-nowrap transition-colors ${
-                    index === 0
-                      ? 'bg-primary-600 text-white'
-                      : 'bg-gray-100 text-gray-600 active:bg-gray-200'
-                  }`}
-                >
-                  {tag}
-                </button>
-              )
-            )}
+          <div className="flex gap-2 px-4 py-3 overflow-x-auto scrollbar-hide">
+            {/* 推荐/全部 */}
+            <button
+              onClick={() => setSelectedCategory(null)}
+              className={cn(
+                'px-4 py-1.5 rounded-full text-sm whitespace-nowrap transition-colors shrink-0',
+                selectedCategory === null
+                  ? 'bg-primary-600 text-white'
+                  : 'bg-gray-100 text-gray-600 active:bg-gray-200'
+              )}
+            >
+              推荐
+            </button>
+
+            {/* 动态分类 */}
+            {categories.map((category) => (
+              <button
+                key={category.id}
+                onClick={() => setSelectedCategory(category.id)}
+                className={cn(
+                  'px-4 py-1.5 rounded-full text-sm whitespace-nowrap transition-colors shrink-0',
+                  selectedCategory === category.id
+                    ? 'text-white'
+                    : 'bg-gray-100 text-gray-600 active:bg-gray-200'
+                )}
+                style={{
+                  backgroundColor:
+                    selectedCategory === category.id
+                      ? category.color || '#ec771a'
+                      : undefined,
+                }}
+              >
+                {category.name}
+              </button>
+            ))}
           </div>
         </div>
 
         {/* 产品 Feed */}
-        <MobileProductFeed />
+        <MobileProductFeed categoryId={selectedCategory || undefined} />
       </MobileLayout>
     );
   }

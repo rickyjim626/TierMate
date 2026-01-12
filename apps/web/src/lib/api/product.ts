@@ -10,7 +10,16 @@ import type {
   CreateReviewParams,
   UpdateReviewParams,
   CreateVideoParams,
+  Category,
 } from '@/types';
+
+/**
+ * 获取所有分类
+ */
+export async function getCategories(): Promise<Category[]> {
+  const response = await api.get<Category[]>('/categories');
+  return response.data;
+}
 
 /**
  * 获取产品列表

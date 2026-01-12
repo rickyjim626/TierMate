@@ -1,0 +1,24 @@
+{
+  "name": "tiermate",
+  "version": "1.0.0",
+  "private": true,
+  "description": "TierMate - 好物分享平台",
+  "scripts": {
+    "dev": "pnpm -r --parallel run dev",
+    "dev:web": "pnpm --filter @tiermate/web dev",
+    "dev:api": "pnpm --filter @tiermate/api dev",
+    "build": "pnpm -r run build",
+    "build:web": "pnpm --filter @tiermate/web build",
+    "build:api": "pnpm --filter @tiermate/api build",
+    "lint": "pnpm -r run lint",
+    "clean": "pnpm -r run clean && rm -rf node_modules",
+    "db:generate": "pnpm --filter @tiermate/api prisma:generate",
+    "db:push": "pnpm --filter @tiermate/api prisma:push",
+    "db:migrate": "pnpm --filter @tiermate/api prisma:migrate",
+    "db:studio": "pnpm --filter @tiermate/api prisma:studio"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "pnpm": ">=8.0.0"
+  }
+}

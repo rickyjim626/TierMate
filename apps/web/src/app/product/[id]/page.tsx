@@ -1,7 +1,7 @@
 'use client';
 
 import { useIsMobile } from '@/hooks/use-mobile';
-import { MobileProductDetail, mockProductDetail } from '@/components/mobile';
+import { MobileProductDetailEnhanced } from '@/components/mobile/product-detail';
 
 interface ProductPageProps {
   params: { id: string };
@@ -10,24 +10,19 @@ interface ProductPageProps {
 export default function ProductPage({ params }: ProductPageProps) {
   const isMobile = useIsMobile();
 
-  // 实际项目中这里应该从 API 获取产品数据
-  const product = {
-    ...mockProductDetail,
-    id: params.id,
-  };
-
   if (isMobile) {
-    return <MobileProductDetail product={product} />;
+    return <MobileProductDetailEnhanced productId={params.id} />;
   }
 
   // 桌面端产品详情页（简化版本）
+  // TODO: 实现桌面端详情页
   return (
     <div className="min-h-screen bg-gray-50 p-8">
       <div className="max-w-4xl mx-auto bg-white rounded-lg shadow p-8">
         <h1 className="text-3xl font-bold text-gray-900 mb-4">
-          {product.title}
+          产品详情
         </h1>
-        <p className="text-gray-600">{product.description}</p>
+        <p className="text-gray-600">桌面端详情页开发中...</p>
       </div>
     </div>
   );

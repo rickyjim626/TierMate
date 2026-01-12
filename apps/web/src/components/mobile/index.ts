@@ -9,3 +9,10 @@ export { ProductCardSkeleton, ProductCardSkeletonList } from './ProductCardSkele
 export { MobileSearchPage } from './MobileSearchPage';
 export { MobileProductDetail, mockProductDetail } from './MobileProductDetail';
 export { MobileProfilePage } from './MobileProfilePage';
+
+// 博主主页组件
+export * from './blogger';
+// 分类组件
+export * from './category';
+// 产品详情增强组件
+export * from './product-detail';

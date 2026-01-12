@@ -2,6 +2,7 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import {
   Settings,
   Heart,
@@ -12,36 +13,10 @@ import {
   Bell,
   HelpCircle,
   Shield,
+  User as UserIcon,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-
-interface UserProfile {
-  id: string;
-  name: string;
-  avatar: string;
-  bio: string;
-  stats: {
-    posts: number;
-    likes: number;
-    collected: number;
-    followers: number;
-    following: number;
-  };
-}
-
-const mockUser: UserProfile = {
-  id: 'u1',
-  name: '好物分享官',
-  avatar: 'https://i.pravatar.cc/150?u=profile',
-  bio: '分享美好生活，发现优质好物 ✨',
-  stats: {
-    posts: 28,
-    likes: 1256,
-    collected: 342,
-    followers: 8920,
-    following: 156,
-  },
-};
+import type { User } from '@/lib/authApi';
 
 const menuItems = [
   {
@@ -89,26 +64,43 @@ const settingsItems = [
 ];
 
 interface MobileProfilePageProps {
-  user?: UserProfile | null;
+  user: User | null;
+  isLoading?: boolean;
   onLogout?: () => void;
 }
 
 export function MobileProfilePage({
-  user = mockUser,
+  user,
+  isLoading = false,
   onLogout,
 }: MobileProfilePageProps) {
+  const router = useRouter();
+
+  // 加载中状态
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <div className="bg-gradient-to-br from-primary-500 to-primary-600 pt-safe">
+          <div className="px-6 py-8 animate-pulse">
+            <div className="flex items-start gap-4">
+              <div className="w-[72px] h-[72px] rounded-full bg-white/30" />
+              <div className="flex-1">
+                <div className="h-6 bg-white/30 rounded w-32 mb-2" />
+                <div className="h-4 bg-white/30 rounded w-48" />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // 如果没有用户数据，显示登录提示
   if (!user) {
     return (
       <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center px-8">
         <div className="w-24 h-24 bg-gray-200 rounded-full mb-6 flex items-center justify-center">
-          <Image
-            src="https://i.pravatar.cc/150?u=guest"
-            alt="Guest"
-            width={96}
-            height={96}
-            className="rounded-full opacity-50"
-          />
+          <UserIcon className="w-12 h-12 text-gray-400" />
         </div>
         <h2 className="text-xl font-semibold text-gray-900 mb-2">
           登录后查看更多
@@ -116,15 +108,19 @@ export function MobileProfilePage({
         <p className="text-gray-500 text-center mb-8">
           登录后可以收藏好物、关注达人、发布分享
         </p>
-        <Link
-          href="/auth"
+        <button
+          onClick={() => router.push('/auth')}
           className="w-full bg-primary-600 text-white py-3 rounded-full text-center font-medium active:bg-primary-700"
         >
           立即登录
-        </Link>
+        </button>
       </div>
     );
   }
+
+  // 用户信息
+  const displayName = user.display_name || user.username || user.email?.split('@')[0] || '用户';
+  const avatarUrl = user.avatar_url || `https://api.dicebear.com/7.x/initials/svg?seed=${displayName}`;
 
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
@@ -133,15 +129,19 @@ export function MobileProfilePage({
         <div className="px-6 py-8">
           <div className="flex items-start gap-4">
             <Image
-              src={user.avatar}
-              alt={user.name}
+              src={avatarUrl}
+              alt={displayName}
               width={72}
               height={72}
               className="rounded-full border-3 border-white shadow-lg"
             />
             <div className="flex-1">
-              <h1 className="text-xl font-bold text-white mb-1">{user.name}</h1>
-              <p className="text-primary-100 text-sm">{user.bio}</p>
+              <h1 className="text-xl font-bold text-white mb-1">{displayName}</h1>
+              {user.bio ? (
+                <p className="text-primary-100 text-sm">{user.bio}</p>
+              ) : (
+                <p className="text-primary-100 text-sm opacity-70">这个人很懒，什么都没写~</p>
+              )}
             </div>
             <Link
               href="/profile/edit"
@@ -151,30 +151,22 @@ export function MobileProfilePage({
             </Link>
           </div>
 
-          {/* 统计数据 */}
+          {/* 统计数据 - 暂时使用占位数据，后续可接入真实统计 */}
           <div className="flex justify-around mt-6 pt-6 border-t border-white/20">
             <div className="text-center">
-              <p className="text-2xl font-bold text-white">
-                {user.stats.posts}
-              </p>
+              <p className="text-2xl font-bold text-white">0</p>
               <p className="text-xs text-primary-100">发布</p>
             </div>
             <div className="text-center">
-              <p className="text-2xl font-bold text-white">
-                {user.stats.followers.toLocaleString()}
-              </p>
+              <p className="text-2xl font-bold text-white">0</p>
               <p className="text-xs text-primary-100">粉丝</p>
             </div>
             <div className="text-center">
-              <p className="text-2xl font-bold text-white">
-                {user.stats.following}
-              </p>
+              <p className="text-2xl font-bold text-white">0</p>
               <p className="text-xs text-primary-100">关注</p>
             </div>
             <div className="text-center">
-              <p className="text-2xl font-bold text-white">
-                {user.stats.likes.toLocaleString()}
-              </p>
+              <p className="text-2xl font-bold text-white">0</p>
               <p className="text-xs text-primary-100">获赞</p>
             </div>
           </div>
@@ -239,8 +231,15 @@ export function MobileProfilePage({
         </button>
       </div>
 
+      {/* 用户信息 */}
+      <div className="px-4 mt-4">
+        <p className="text-center text-xs text-gray-400">
+          ID: {user.id} | {user.email || '未绑定邮箱'}
+        </p>
+      </div>
+
       {/* 版本信息 */}
-      <p className="text-center text-xs text-gray-400 mt-6">
+      <p className="text-center text-xs text-gray-400 mt-4">
         TierMate v1.0.0
       </p>
     </div>

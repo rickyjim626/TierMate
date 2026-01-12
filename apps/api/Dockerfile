@@ -36,4 +36,5 @@ COPY --from=builder /app/package.json ./
 
 EXPOSE 3001
 
-CMD ["bun", "run", "dist/main.js"]
+# Run Prisma db push and start the app
+CMD ["sh", "-c", "bunx prisma db push --skip-generate && bun run dist/main.js"]

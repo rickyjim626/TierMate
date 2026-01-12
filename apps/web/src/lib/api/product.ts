@@ -13,6 +13,27 @@ import type {
   Category,
 } from '@/types';
 
+// ========== 产品 CRUD ==========
+
+export interface CreateProductParams {
+  title: string;
+  description: string;
+  brand?: string;
+  price?: number;
+  purchaseUrl?: string;
+  categoryId?: string;
+  images?: string[];
+  tags?: string[];
+}
+
+/**
+ * 创建产品
+ */
+export async function createProduct(params: CreateProductParams): Promise<Product> {
+  const response = await api.post<Product>('/products', params);
+  return response.data;
+}
+
 /**
  * 获取所有分类
  */

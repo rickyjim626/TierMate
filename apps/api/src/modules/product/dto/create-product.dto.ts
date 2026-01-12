@@ -23,6 +23,12 @@ export class CreateProductDto {
   @MaxLength(2000)
   description: string;
 
+  @ApiPropertyOptional({ description: '产品品牌' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  brand?: string;
+
   @ApiPropertyOptional({ description: '产品价格' })
   @IsOptional()
   @IsNumber()
@@ -44,4 +50,10 @@ export class CreateProductDto {
   @IsArray()
   @IsUrl({}, { each: true })
   images?: string[];
+
+  @ApiPropertyOptional({ description: '产品标签' })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  tags?: string[];
 }

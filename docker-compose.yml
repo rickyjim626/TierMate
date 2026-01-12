@@ -13,6 +13,9 @@ services:
       - JWT_REFRESH_SECRET=${JWT_REFRESH_SECRET:-your-super-secret-refresh-key-change-this}
       - PORT=3001
       - CORS_ORIGIN=${CORS_ORIGIN:-*}
+      - AI_ROUTER_URL=${AI_ROUTER_URL:-https://router.xiaojinpro.top}
+      - AI_ROUTER_API_KEY=${AI_ROUTER_API_KEY}
+      - AI_VISION_MODEL=${AI_VISION_MODEL:-gemini-3-pro-preview}
     depends_on:
       postgres:
         condition: service_healthy

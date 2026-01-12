@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { useMobileEnvironment } from '@/hooks/use-mobile';
 import { WeChatLoginForm } from '@/components/auth/WeChatLoginForm';
 import { sendSmsCode, verifySmsCode, startGoogleOAuth } from '@/lib/authApi';
 import { ArrowLeft, LogIn, Mail, Smartphone } from 'lucide-react';
@@ -342,9 +343,15 @@ export default function AuthPage() {
   const [sendingCode, setSendingCode] = useState(false);
   const [countdown, setCountdown] = useState(0);
   const [activeTab, setActiveTab] = useState<'wechat' | 'email' | 'phone' | 'google'>('wechat');
+  const [showAllMethods, setShowAllMethods] = useState(false);
   const { signIn, refreshUser } = useAuth();
   const { toast } = useToast();
   const router = useRouter();
+  const { isMobile, isWeChat } = useMobileEnvironment();
+
+  // 移动端微信环境默认只显示微信登录
+  const isMobileWeChat = isMobile && isWeChat;
+  const shouldShowOnlyWeChat = isMobileWeChat && !showAllMethods;
 
   useEffect(() => {
     if (countdown > 0) {
@@ -447,149 +454,167 @@ export default function AuthPage() {
       <div className="auth-page-overlay">
         <Link href="/" className="auth-back-btn">
           <ArrowLeft size={16} />
-          Back to Home
+          返回首页
         </Link>
 
         <div className="auth-modal">
           <div className="auth-modal-header">
             <div>
               <h2 className="auth-modal-title">TierMate</h2>
-              <p className="auth-modal-subtitle">Sign in to share your favorites</p>
+              <p className="auth-modal-subtitle">登录后发现更多好物</p>
             </div>
           </div>
 
           <div className="auth-modal-body">
-            {/* Tabs */}
-            <div className="auth-tabs">
-              <button
-                className={`auth-tab ${activeTab === 'wechat' ? 'active' : ''}`}
-                onClick={() => setActiveTab('wechat')}
-              >
-                <WeChatIcon />
-                WeChat
-              </button>
-              <button
-                className={`auth-tab ${activeTab === 'phone' ? 'active' : ''}`}
-                onClick={() => setActiveTab('phone')}
-              >
-                <Smartphone size={18} />
-                Phone
-              </button>
-              <button
-                className={`auth-tab ${activeTab === 'email' ? 'active' : ''}`}
-                onClick={() => setActiveTab('email')}
-              >
-                <Mail size={18} />
-                Email
-              </button>
-              <button
-                className={`auth-tab ${activeTab === 'google' ? 'active' : ''}`}
-                onClick={() => setActiveTab('google')}
-              >
-                <GoogleIcon className="w-4 h-4" />
-                Google
-              </button>
-            </div>
+            {/* 移动端微信环境：只显示微信登录 */}
+            {shouldShowOnlyWeChat ? (
+              <>
+                <div className="wechat-section">
+                  <WeChatLoginForm onSuccess={handleWeChatSuccess} />
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowAllMethods(true)}
+                  className="w-full mt-6 text-center text-sm text-gray-500 hover:text-gray-700 transition-colors"
+                >
+                  使用其他登录方式
+                </button>
+              </>
+            ) : (
+              <>
+                {/* Tabs */}
+                <div className="auth-tabs">
+                  <button
+                    className={`auth-tab ${activeTab === 'wechat' ? 'active' : ''}`}
+                    onClick={() => setActiveTab('wechat')}
+                  >
+                    <WeChatIcon />
+                    微信
+                  </button>
+                  <button
+                    className={`auth-tab ${activeTab === 'phone' ? 'active' : ''}`}
+                    onClick={() => setActiveTab('phone')}
+                  >
+                    <Smartphone size={18} />
+                    手机
+                  </button>
+                  <button
+                    className={`auth-tab ${activeTab === 'email' ? 'active' : ''}`}
+                    onClick={() => setActiveTab('email')}
+                  >
+                    <Mail size={18} />
+                    邮箱
+                  </button>
+                  <button
+                    className={`auth-tab ${activeTab === 'google' ? 'active' : ''}`}
+                    onClick={() => setActiveTab('google')}
+                  >
+                    <GoogleIcon className="w-4 h-4" />
+                    Google
+                  </button>
+                </div>
 
-            {/* WeChat Login */}
-            {activeTab === 'wechat' && (
-              <div className="wechat-section">
-                <WeChatLoginForm onSuccess={handleWeChatSuccess} />
-              </div>
-            )}
-
-            {/* Phone Login */}
-            {activeTab === 'phone' && (
-              <form className="auth-form" onSubmit={handlePhoneLogin}>
-                <div className="auth-field">
-                  <label htmlFor="phone">Phone Number</label>
-                  <div className="phone-input-group">
-                    <input
-                      id="phone"
-                      type="tel"
-                      value={phone}
-                      onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 11))}
-                      placeholder="Enter phone number"
-                      required
-                      maxLength={11}
-                    />
-                    <button
-                      type="button"
-                      className="send-code-btn"
-                      onClick={handleSendCode}
-                      disabled={sendingCode || countdown > 0 || phone.length !== 11}
-                    >
-                      {sendingCode ? 'Sending...' : countdown > 0 ? `${countdown}s` : 'Get Code'}
-                    </button>
+                {/* WeChat Login */}
+                {activeTab === 'wechat' && (
+                  <div className="wechat-section">
+                    <WeChatLoginForm onSuccess={handleWeChatSuccess} />
                   </div>
-                </div>
-                <div className="auth-field">
-                  <label htmlFor="smsCode">Verification Code</label>
-                  <input
-                    id="smsCode"
-                    type="text"
-                    value={smsCode}
-                    onChange={(e) => setSmsCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                    placeholder="Enter 6-digit code"
-                    required
-                    maxLength={6}
-                  />
-                </div>
-                <button type="submit" className="auth-submit" disabled={loading || !phone || !smsCode}>
-                  <LogIn size={18} />
-                  {loading ? 'Signing in...' : 'Sign In / Register'}
-                </button>
-              </form>
-            )}
+                )}
 
-            {/* Email Login */}
-            {activeTab === 'email' && (
-              <form className="auth-form" onSubmit={handleSignIn}>
-                <div className="auth-field">
-                  <label htmlFor="email">Email</label>
-                  <input
-                    id="email"
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="Enter your email"
-                    required
-                  />
-                </div>
-                <div className="auth-field">
-                  <label htmlFor="password">Password</label>
-                  <input
-                    id="password"
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Enter your password"
-                    required
-                  />
-                </div>
-                <button type="submit" className="auth-submit" disabled={loading}>
-                  <LogIn size={18} />
-                  {loading ? 'Signing in...' : 'Sign In'}
-                </button>
-              </form>
-            )}
+                {/* Phone Login */}
+                {activeTab === 'phone' && (
+                  <form className="auth-form" onSubmit={handlePhoneLogin}>
+                    <div className="auth-field">
+                      <label htmlFor="phone">手机号</label>
+                      <div className="phone-input-group">
+                        <input
+                          id="phone"
+                          type="tel"
+                          value={phone}
+                          onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 11))}
+                          placeholder="请输入手机号"
+                          required
+                          maxLength={11}
+                        />
+                        <button
+                          type="button"
+                          className="send-code-btn"
+                          onClick={handleSendCode}
+                          disabled={sendingCode || countdown > 0 || phone.length !== 11}
+                        >
+                          {sendingCode ? '发送中...' : countdown > 0 ? `${countdown}s` : '获取验证码'}
+                        </button>
+                      </div>
+                    </div>
+                    <div className="auth-field">
+                      <label htmlFor="smsCode">验证码</label>
+                      <input
+                        id="smsCode"
+                        type="text"
+                        value={smsCode}
+                        onChange={(e) => setSmsCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                        placeholder="请输入6位验证码"
+                        required
+                        maxLength={6}
+                      />
+                    </div>
+                    <button type="submit" className="auth-submit" disabled={loading || !phone || !smsCode}>
+                      <LogIn size={18} />
+                      {loading ? '登录中...' : '登录 / 注册'}
+                    </button>
+                  </form>
+                )}
 
-            {/* Google Login */}
-            {activeTab === 'google' && (
-              <div className="auth-form">
-                <button type="button" className="google-btn" onClick={handleGoogleLogin}>
-                  <GoogleIcon className="w-5 h-5" />
-                  Continue with Google
-                </button>
-                <p className="text-center text-sm text-gray-500 mt-4">
-                  Click to sign in with your Google account
-                </p>
-              </div>
+                {/* Email Login */}
+                {activeTab === 'email' && (
+                  <form className="auth-form" onSubmit={handleSignIn}>
+                    <div className="auth-field">
+                      <label htmlFor="email">邮箱</label>
+                      <input
+                        id="email"
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder="请输入邮箱"
+                        required
+                      />
+                    </div>
+                    <div className="auth-field">
+                      <label htmlFor="password">密码</label>
+                      <input
+                        id="password"
+                        type="password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        placeholder="请输入密码"
+                        required
+                      />
+                    </div>
+                    <button type="submit" className="auth-submit" disabled={loading}>
+                      <LogIn size={18} />
+                      {loading ? '登录中...' : '登录'}
+                    </button>
+                  </form>
+                )}
+
+                {/* Google Login */}
+                {activeTab === 'google' && (
+                  <div className="auth-form">
+                    <button type="button" className="google-btn" onClick={handleGoogleLogin}>
+                      <GoogleIcon className="w-5 h-5" />
+                      使用 Google 账号登录
+                    </button>
+                    <p className="text-center text-sm text-gray-500 mt-4">
+                      点击使用 Google 账号登录
+                    </p>
+                  </div>
+                )}
+              </>
             )}
           </div>
 
           <div className="auth-modal-footer">
-            By signing in, you agree to our Terms of Service
+            登录即表示同意服务条款
           </div>
         </div>
       </div>

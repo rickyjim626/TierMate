@@ -10,11 +10,20 @@ import {
   subscribeLoginEvents,
   getLoginStatus,
   exchangeCodeForTokens,
+  startWeChatMPOAuth,
+  isInWeChatBrowser,
   CLIENT_ID,
   type LoginStatusEvent,
 } from '@/lib/authApi';
 import { useAuth } from '@/contexts/AuthContext';
-import { QrCode, CheckCircle, XCircle, Clock, RefreshCw, Smartphone } from 'lucide-react';
+import { QrCode, CheckCircle, XCircle, Clock, RefreshCw, Smartphone, LogIn } from 'lucide-react';
+
+// WeChat icon SVG component
+const WeChatIcon = ({ className }: { className?: string }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+    <path d="M8.691 2.188C3.891 2.188 0 5.476 0 9.53c0 2.212 1.17 4.203 3.002 5.55a.59.59 0 0 1 .213.665l-.39 1.48c-.019.07-.048.141-.048.213 0 .163.13.295.29.295a.326.326 0 0 0 .167-.054l1.903-1.114a.864.864 0 0 1 .717-.098 10.16 10.16 0 0 0 2.837.403c.276 0 .543-.027.811-.05-.857-2.578.157-4.972 1.932-6.446 1.703-1.415 3.882-1.98 5.853-1.838-.576-3.583-4.196-6.348-8.596-6.348zM5.785 5.991c.642 0 1.162.529 1.162 1.18a1.17 1.17 0 0 1-1.162 1.178A1.17 1.17 0 0 1 4.623 7.17c0-.651.52-1.18 1.162-1.18zm5.813 0c.642 0 1.162.529 1.162 1.18a1.17 1.17 0 0 1-1.162 1.178 1.17 1.17 0 0 1-1.162-1.178c0-.651.52-1.18 1.162-1.18zm5.34 2.867c-1.797-.052-3.746.512-5.28 1.786-1.72 1.428-2.687 3.72-1.78 6.22.942 2.453 3.666 4.229 6.884 4.229.826 0 1.622-.12 2.361-.336a.722.722 0 0 1 .598.082l1.584.926a.272.272 0 0 0 .14.045c.134 0 .24-.111.24-.247 0-.06-.023-.12-.038-.177l-.327-1.233a.582.582 0 0 1-.023-.156.49.49 0 0 1 .201-.398C23.024 18.48 24 16.82 24 14.98c0-3.21-2.931-5.837-6.656-6.088V8.89c-.135-.006-.27-.027-.405-.03zm-2.53 3.274c.535 0 .969.44.969.982a.976.976 0 0 1-.969.983.976.976 0 0 1-.969-.983c0-.542.434-.982.97-.982zm4.844 0c.535 0 .969.44.969.982a.976.976 0 0 1-.969.983.976.976 0 0 1-.969-.983c0-.542.434-.982.969-.982z" />
+  </svg>
+);
 
 const successStyles = `
   @keyframes scaleIn {
@@ -43,14 +52,26 @@ export function WeChatLoginForm({ onSuccess }: WeChatLoginFormProps) {
   const [error, setError] = useState<string>('');
   const [timeLeft, setTimeLeft] = useState(300);
   const [isLoading, setIsLoading] = useState(true);
+  const [isWeChat, setIsWeChat] = useState(false);
+  const [mpLoading, setMpLoading] = useState(false);
 
   const unsubscribeRef = useRef<(() => void) | null>(null);
   const timerRef = useRef<number | null>(null);
   const pollingRef = useRef<number | null>(null);
   const iframeContainerRef = useRef<HTMLDivElement>(null);
 
+  // Check if in WeChat browser on mount
   useEffect(() => {
-    initLogin();
+    const inWeChat = isInWeChatBrowser();
+    setIsWeChat(inWeChat);
+
+    // Only initialize QR login if not in WeChat browser
+    if (!inWeChat) {
+      initLogin();
+    } else {
+      setIsLoading(false);
+    }
+
     return cleanup;
   }, []);
 
@@ -227,6 +248,20 @@ export function WeChatLoginForm({ onSuccess }: WeChatLoginFormProps) {
     initLogin();
   };
 
+  // Handle WeChat MP (Service Account) one-click login
+  const handleWeChatMPLogin = async () => {
+    try {
+      setMpLoading(true);
+      setError('');
+      await startWeChatMPOAuth();
+      // Note: This will redirect the page, so we won't reach here
+    } catch (err) {
+      console.error('WeChat MP OAuth error:', err);
+      setError(err instanceof Error ? err.message : 'Failed to start WeChat login');
+      setMpLoading(false);
+    }
+  };
+
   const getStatusIcon = () => {
     switch (status) {
       case 'pending':
@@ -277,6 +312,66 @@ export function WeChatLoginForm({ onSuccess }: WeChatLoginFormProps) {
 
   const progress = ((300 - timeLeft) / 300) * 100;
 
+  // WeChat MP (Service Account) one-click login UI for WeChat browser
+  if (isWeChat) {
+    return (
+      <>
+        <style>{successStyles}</style>
+        <div className="space-y-6">
+          {status === 'success' ? (
+            <div className="flex flex-col items-center py-8">
+              <div
+                className="w-20 h-20 rounded-full bg-green-100 flex items-center justify-center mb-4"
+                style={{ animation: 'scaleIn 0.3s ease-out' }}
+              >
+                <CheckCircle className="h-12 w-12 text-green-500" />
+              </div>
+              <p className="text-lg font-medium text-green-600 mb-2">Login Successful</p>
+              <p className="text-sm text-gray-500">Redirecting...</p>
+            </div>
+          ) : (
+            <>
+              <div className="flex flex-col items-center py-6">
+                <div className="w-20 h-20 rounded-full bg-green-50 flex items-center justify-center mb-4">
+                  <WeChatIcon className="h-12 w-12 text-green-500" />
+                </div>
+                <h3 className="text-lg font-medium text-gray-900 mb-2">WeChat Quick Login</h3>
+                <p className="text-sm text-gray-500 text-center mb-6">
+                  Click the button below to authorize with your WeChat account
+                </p>
+
+                <Button
+                  onClick={handleWeChatMPLogin}
+                  disabled={mpLoading}
+                  className="w-full max-w-xs bg-green-500 hover:bg-green-600 text-white py-6 text-lg"
+                >
+                  {mpLoading ? (
+                    <>
+                      <Clock className="h-5 w-5 mr-2 animate-spin" />
+                      Redirecting...
+                    </>
+                  ) : (
+                    <>
+                      <LogIn className="h-5 w-5 mr-2" />
+                      Login with WeChat
+                    </>
+                  )}
+                </Button>
+              </div>
+
+              {error && (
+                <Alert variant="destructive">
+                  <AlertDescription>{error}</AlertDescription>
+                </Alert>
+              )}
+            </>
+          )}
+        </div>
+      </>
+    );
+  }
+
+  // QR code login UI for non-WeChat browsers
   return (
     <>
       <style>{successStyles}</style>
